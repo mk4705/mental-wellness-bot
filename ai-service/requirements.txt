@@ -1,0 +1,40 @@
+# ai-service/requirements.txt
+#
+# Changes from original:
+#   - groq upgraded: 0.4.2 → 0.9.0  (0.4.2 had auth header bugs)
+#   - transformers added            (local emotion classification)
+#   - torch added (CPU-only)        (required by transformers pipeline)
+#   - sentence-transformers bumped  (2.5.1 → 2.7.0, numpy 2.x compatible)
+#   - numpy constraint updated      (faiss-cpu 1.8+ supports numpy 2.x)
+#   - requests kept                 (used for other potential HTTP calls)
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+
+# ── Embeddings (local) ────────────────────────────────────────────────────────
+# sentence-transformers 2.7+ is numpy 2.x compatible
+sentence-transformers>=2.7.0
+
+# ── FAISS vector search ───────────────────────────────────────────────────────
+faiss-cpu>=1.8.0
+
+# ── Sparse retrieval (BM25) ───────────────────────────────────────────────────
+rank-bm25==0.2.2
+
+# ── LLM (Groq) ───────────────────────────────────────────────────────────────
+# 0.4.2 had a bug where the Authorization header was silently malformed
+# in some ASGI contexts. 0.9.0 fixes this.
+groq>=0.9.0
+
+# ── Local emotion classification ─────────────────────────────────────────────
+# CPU-only torch keeps the install size manageable (~500 MB vs ~2 GB GPU)
+torch>=2.0.0 --index-url https://download.pytorch.org/whl/cpu
+transformers>=4.40.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+requests>=2.31.0
+nltk==3.8.1
+numpy>=1.24.0
+python-dotenv==1.0.1

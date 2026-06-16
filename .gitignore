@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Env files (never commit these)
+.env
+backend/.env
+ai-service/.env
+
+# FAISS index (regenerate with build_index.py)
+ai-service/data/faiss_index/
+
+# Build artifacts
+frontend/build/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
