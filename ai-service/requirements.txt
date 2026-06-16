@@ -13,10 +13,6 @@ fastapi==0.109.2
 uvicorn[standard]==0.27.1
 pydantic==2.6.1
 
-# ── Embeddings (local) ────────────────────────────────────────────────────────
-# sentence-transformers 2.7+ is numpy 2.x compatible
-sentence-transformers>=2.7.0
-
 # ── FAISS vector search ───────────────────────────────────────────────────────
 faiss-cpu>=1.8.0
 
@@ -27,11 +23,6 @@ rank-bm25==0.2.2
 # 0.4.2 had a bug where the Authorization header was silently malformed
 # in some ASGI contexts. 0.9.0 fixes this.
 groq>=0.9.0
-
-# ── Local emotion classification ─────────────────────────────────────────────
-# CPU-only torch keeps the install size manageable (~500 MB vs ~2 GB GPU)
-torch>=2.0.0 --index-url https://download.pytorch.org/whl/cpu
-transformers>=4.40.0
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 requests>=2.31.0

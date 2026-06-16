@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-from sentence_transformers import SentenceTransformer
+from core.embeddings import embed
 import nltk
 
 # Download NLTK sentence tokenizer (once)
@@ -68,10 +68,7 @@ def sentence_chunk(text: str, sentences_per_chunk: int = 4, overlap: int = 1):
 
 
 def main():
-    # Load model
-    print(f"Loading embedding model: {EMBEDDING_MODEL}")
-    model = SentenceTransformer(EMBEDDING_MODEL)
-    print("   Model loaded")
+    print("Using Hugging Face Inference API for embeddings")
 
     # Read knowledge files
     print(f"\nReading knowledge files from: {KNOWLEDGE_DIR}/")
@@ -113,14 +110,13 @@ def main():
     print(f"\n   Total chunks: {len(all_chunks)}")
 
     # Generate embeddings
-    print("\nGenerating embeddings...")
-    embeddings = model.encode(
-        all_chunks,
-        show_progress_bar=True,
-        normalize_embeddings=True,  # normalize for cosine similarity
-        batch_size=32,
-    )
-    embeddings = np.array(embeddings).astype("float32")
+    print("\nGenerating embeddings via Hugging Face Inference API...")
+    embeddings_list = []
+    for i, chunk in enumerate(all_chunks):
+        print(f"   Embedding chunk {i+1}/{len(all_chunks)}...", end="\r")
+        embeddings_list.append(embed(chunk))
+    print()
+    embeddings = np.array(embeddings_list).astype("float32")
 
     # Build FAISS index
     # IndexFlatL2: exact nearest-neighbour search (correct for small KBs)

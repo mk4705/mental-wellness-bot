@@ -19,25 +19,15 @@ from typing import List, Tuple
 
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import requests
 
 logger = logging.getLogger(__name__)
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"   # 384-dim, fast, good quality
 DIMENSION       = 384
 
-_model: SentenceTransformer = None
 _index: faiss.Index         = None
 _metadata: list             = []
-
-
-def _get_model() -> SentenceTransformer:
-    global _model
-    if _model is None:
-        logger.info("[embeddings] Loading embedding model: %s", EMBEDDING_MODEL)
-        _model = SentenceTransformer(EMBEDDING_MODEL)
-        logger.info("[embeddings] Embedding model loaded")
-    return _model
 
 
 def _get_index() -> Tuple[faiss.Index, list]:
@@ -87,10 +77,48 @@ def _get_index() -> Tuple[faiss.Index, list]:
 
 
 def embed(text: str) -> np.ndarray:
-    """Return a normalised 384-dim float32 embedding for `text`."""
-    model     = _get_model()
-    embedding = model.encode([text], normalize_embeddings=True)
-    return embedding[0].astype("float32")
+    """Return a normalised 384-dim float32 embedding for `text` using Hugging Face Inference API."""
+    hf_token = os.getenv("HF_API_TOKEN", "").strip()
+    if not hf_token:
+        # Fallback to HF_API_KEY
+        hf_token = os.getenv("HF_API_KEY", "").strip()
+
+    if not hf_token:
+        raise RuntimeError("HF_API_TOKEN is not set in the environment.")
+
+    # Using the router domain for serverless inference API
+    url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    payload = {
+        "inputs": [text],
+        "options": {"wait_for_model": True}
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if response.status_code != 200:
+            raise RuntimeError(f"Hugging Face API returned status {response.status_code}: {response.text}")
+
+        data = response.json()
+        if isinstance(data, list) and len(data) > 0:
+            vector = data[0]
+            # Unwrap nested sequence features if present
+            while isinstance(vector, list) and len(vector) > 0 and isinstance(vector[0], list):
+                vector = vector[0]
+
+            if len(vector) == DIMENSION:
+                embedding = np.array(vector, dtype=np.float32)
+                # Apply L2 normalisation
+                norm = np.linalg.norm(embedding)
+                if norm > 0:
+                    embedding = embedding / norm
+                return embedding
+
+        raise ValueError(f"Unexpected embedding output structure from Hugging Face: {type(data)}")
+
+    except Exception as e:
+        logger.error("[embeddings] Hugging Face embed failed: %s", str(e))
+        raise
 
 
 def search_faiss(query_embedding: np.ndarray, k: int = 5) -> List[Tuple[dict, float]]:
@@ -117,6 +145,5 @@ def search_faiss(query_embedding: np.ndarray, k: int = 5) -> List[Tuple[dict, fl
 
 
 def preload() -> None:
-    """Eagerly warm up both the model and the index at service startup."""
-    _get_model()
+    """Eagerly warm up the FAISS index at service startup."""
     _get_index()
