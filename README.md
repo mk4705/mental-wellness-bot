@@ -1,163 +1,311 @@
-# Mental Wellness Chatbot V2
+# Mental Wellness Bot
 
-A full-stack mental wellness chatbot built as an interview-ready B.Tech final project.
+An AI-powered mental wellness companion that provides emotionally aware conversations, evidence-based wellness guidance, long-term memory, and personalized support through Retrieval-Augmented Generation (RAG).
 
-**Stack:** React · Tailwind · Node.js/Express · MongoDB Atlas · Python FastAPI · FAISS · Groq · HuggingFace
+## Live Demo
+
+Frontend: https://mwc-nrvo.onrender.com
 
 ---
 
-## Architecture
+# Overview
 
+Mental Wellness Bot is a full-stack AI application designed to offer supportive and educational wellness conversations.
+
+The system combines:
+
+* Emotion Detection
+* Retrieval-Augmented Generation (RAG)
+* Long-Term Memory
+* Session-Based Conversations
+* Analytics Dashboard
+* Knowledge-Grounded Responses
+
+The chatbot is not intended to replace professional support. It focuses on wellness education, emotional reflection, and practical coping strategies.
+
+---
+
+# Features
+
+### User Authentication
+
+* User Registration
+* Secure Login
+* JWT Authentication
+* Protected Routes
+
+### AI-Powered Conversations
+
+* Context-aware responses
+* Emotion-aware interactions
+* Session-based chat history
+* Personalized conversations
+
+### Emotion Detection
+
+The AI detects emotional signals from user messages before generating a response.
+
+Supported emotions include:
+
+* Joy
+* Sadness
+* Fear
+* Anger
+* Surprise
+* Disgust
+* Neutral
+
+### Retrieval-Augmented Generation (RAG)
+
+Responses are grounded in a curated mental wellness knowledge base using BM25 retrieval.
+
+Knowledge categories:
+
+* Cognitive Behavioural Therapy (CBT)
+* Anxiety & Stress Management
+* Emotional Regulation
+* Mindfulness & Sleep
+
+### Long-Term Memory
+
+The system extracts meaningful user information and stores it as structured memories.
+
+Examples:
+
+* Preferences
+* Coping strategies
+* Recurring concerns
+* Emotional patterns
+
+These memories are retrieved and used to personalize future conversations.
+
+### Analytics Dashboard
+
+Users can view:
+
+* Conversation statistics
+* Session activity
+* Emotional trends
+* Memory insights
+
+### Responsive Design
+
+The application is fully responsive and optimized for:
+
+* Desktop
+* Tablet
+* Mobile Devices
+
+---
+
+# Architecture
+
+```text
+User
+│
+▼
+React Frontend
+│
+▼
+Node.js Backend
+│
+├── MongoDB Atlas
+│
+└── Python AI Service
+       │
+       ├── Emotion Detection (Hugging Face)
+       ├── BM25 Knowledge Retrieval
+       ├── Memory Context Retrieval
+       └── Groq LLM Response Generation
 ```
-frontend/          React + Tailwind UI
-backend/           Node.js + Express REST API (port 5000)
-ai-service/        Python FastAPI AI pipeline (port 8000)
-```
-
-The Node backend handles auth, sessions, and business logic.  
-The Python service handles ML: emotion detection, hybrid RAG, and LLM calls.
 
 ---
 
-## Setup — Step by Step
+# Technology Stack
 
-### 1. Prerequisites
-- Node.js 18+
-- Python 3.10+
-- MongoDB Atlas free cluster (cloud.mongodb.com)
-- Groq API key (console.groq.com — free)
-- HuggingFace API key (huggingface.co/settings/tokens — free)
+## Frontend
 
----
+* React
+* React Router
+* Axios
+* Tailwind CSS
 
-### 2. Backend
+## Backend
 
-```bash
-cd backend
-npm install
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Mongoose
+* JWT Authentication
+* bcrypt
 
-# Create your .env file
-cp .env.example .env
-# Edit .env and fill in: MONGODB_URI, JWT_SECRET, AI_SERVICE_URL
-```
+## AI Service
 
-**Get MongoDB URI:**  
-MongoDB Atlas → your cluster → Connect → Drivers → copy the connection string.  
-Replace `<password>` with your DB user password.
+* FastAPI
+* Groq API
+* Hugging Face Inference API
+* FAISS
+* BM25 Retrieval
 
-**Generate JWT_SECRET:**
-```bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-```
+## Deployment
 
-```bash
-# Start the backend
-npm run dev
-# ✅ Server running on port 5000
-```
+* Render
+* MongoDB Atlas
 
 ---
 
-### 3. AI Service
+# Project Structure
 
-```bash
-cd ai-service
-python -m venv venv
+```text
+mental-wellness-bot/
 
-# Mac/Linux:
-source venv/bin/activate
-# Windows:
-venv\Scripts\activate
-
-pip install -r requirements.txt
-
-# Create your .env file
-cp .env.example .env
-# Edit .env and fill in: GROQ_API_KEY, HF_API_KEY
-
-# Build the FAISS index from knowledge base files (run once)
-python scripts/build_index.py
-
-# Start the AI service
-uvicorn main:app --reload --port 8000
-# ✅ AI service ready at http://localhost:8000
-# Swagger docs: http://localhost:8000/docs
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
+├── backend/
+│   ├── controllers/
+│   ├── routes/
+│   ├── middleware/
+│   ├── models/
+│   ├── services/
+│   └── server.js
+│
+├── ai-service/
+│   ├── core/
+│   ├── schemas/
+│   ├── data/
+│   ├── scripts/
+│   └── main.py
+│
+└── README.md
 ```
 
 ---
 
-### 4. Frontend (coming next)
+# Knowledge Base
 
-```bash
-cd frontend
-npm install
-npm start
-# React app at http://localhost:3000
+The AI is grounded using a curated wellness knowledge base containing educational content on:
+
+## CBT
+
+* Cognitive Distortions
+* Thought Reframing
+* Behavioural Activation
+* Thought Records
+* Problem Solving
+
+## Anxiety & Stress
+
+* Academic Stress
+* Burnout
+* Anxiety Management
+* Grounding Techniques
+* Breathing Exercises
+
+## Emotional Regulation
+
+* Anger Management
+* Sadness
+* Loneliness
+* Guilt & Shame
+* Emotional Awareness
+
+## Mindfulness & Sleep
+
+* Meditation
+* Mindfulness Basics
+* Sleep Hygiene
+* Self Compassion
+* Relaxation Techniques
+
+---
+
+# Conversation Pipeline
+
+```text
+User Message
+      │
+      ▼
+Emotion Detection
+      │
+      ▼
+Knowledge Retrieval
+      │
+      ▼
+Memory Retrieval
+      │
+      ▼
+Prompt Construction
+      │
+      ▼
+Groq LLM
+      │
+      ▼
+Generated Response
 ```
 
 ---
 
-## API Reference
+# Security
 
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Create account |
-| POST | `/api/v1/auth/login` | Login, get JWT |
-| GET | `/api/v1/auth/me` | Get profile (auth required) |
-
-### Sessions
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/sessions` | List all sessions |
-| POST | `/api/v1/sessions` | Create session |
-| GET | `/api/v1/sessions/:id` | Get session + messages |
-| DELETE | `/api/v1/sessions/:id` | Delete session |
-
-### Chat
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/chat/message` | Send message, get AI reply |
-| GET | `/api/v1/chat/:sessionId/history` | Full message history |
-
-### Memory, Analytics, Feedback
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/memory` | User's long-term memory |
-| DELETE | `/api/v1/memory/:id` | Delete memory entry |
-| GET | `/api/v1/analytics/overview` | Stats summary |
-| GET | `/api/v1/analytics/emotions` | Emotion timeline |
-| POST | `/api/v1/feedback` | Rate a message |
+* JWT Authentication
+* Password Hashing (bcrypt)
+* Protected API Routes
+* Environment Variable Configuration
+* CORS Protection
+* Input Validation
 
 ---
 
-## Key Design Decisions (for interviews)
+# Deployment
 
-**Why Node + Python instead of Django monolith?**  
-Node handles async I/O (many concurrent chat requests) well. Python has better ML libraries. Each service does what it's best at.
+The application is deployed as three independent services:
 
-**Why store emotion per message?**  
-Enables the analytics dashboard without re-running classification on historical data. Also lets us show users their emotional journey over time.
+### Frontend
 
-**Why is long-term memory extracted, not stored raw?**  
-Storing full transcripts would be expensive to embed and noisy to retrieve. Extracting structured facts (max 100 chars each) gives the LLM clean, actionable context.
+Render Static Site
 
-**Why FAISS + BM25 hybrid instead of just FAISS?**  
-Dense search misses exact keyword matches (e.g. "5-4-3-2-1 grounding", "CBT"). Sparse BM25 catches these. RRF fusion rewards chunks appearing in both result lists.
+### Backend API
 
-**Why sentence-boundary chunking?**  
-Character-based chunking (V1) could split "Breathing helps the ner-" / "-vous system". Incomplete sentences produce worse embeddings. Sentence-boundary chunking ensures semantic completeness.
+Render Web Service
+
+### AI Service
+
+Render Web Service
+
+### Database
+
+MongoDB Atlas
 
 ---
 
-## V1 → V2 Key Improvements
+# Future Improvements
 
-| Issue in V1 | Fix in V2 |
-|-------------|-----------|
-| All logic in one 150-line function | Separated into services + controllers |
-| In-RAM FAISS memory (lost on restart, shared across users) | Per-user memory in MongoDB |
-| HF API called for embeddings on every message (+500ms) | Local sentence-transformers (milliseconds) |
-| Character-based RAG chunking | Sentence-boundary chunking |
-| Wrong Groq model name | Correct model in .env |
-| `sentence-transformers` not in requirements.txt | Explicit dependency |
-| Crisis keywords hardcoded in view | Config file, easy to update |
+* Streaming AI Responses
+* Voice Interaction
+* Multi-Language Support
+* Advanced Analytics
+
+---
+
+# Learning Outcomes
+
+This project demonstrates practical experience with:
+
+* Full Stack Development
+* REST API Design
+* Authentication & Authorization
+* AI Application Development
+* Retrieval-Augmented Generation
+* Conversational Memory Systems
+* MongoDB Data Modeling
+* Cloud Deployment
+* Production Troubleshooting
+
+---
+
+# Disclaimer
+
+This application is intended for educational and wellness-support purposes only. It does not provide medical advice, diagnosis, or treatment and should not be considered a substitute for professional mental health services.
