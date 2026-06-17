@@ -24,7 +24,7 @@ app.use(
       process.env.FRONTEND_URL, // production URL
     ].filter(Boolean),
     credentials: true,
-  })
+  }),
 );
 
 // Parse incoming JSON bodies
@@ -39,6 +39,10 @@ if (process.env.NODE_ENV !== "test") {
 // Simple ping endpoint — useful for uptime monitors and deployment checks
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.head("/health", (req, res) => {
+  res.status(200).end();
 });
 
 // API Routes

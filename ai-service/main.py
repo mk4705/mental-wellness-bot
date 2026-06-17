@@ -14,8 +14,13 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from schemas import (
-    ChatRequest, ChatResponse, EmotionResult, RetrievedChunk,
-    MemoryExtractionRequest, MemoryExtractionResponse, MemoryFact,
+    ChatRequest,
+    ChatResponse,
+    EmotionResult,
+    RetrievedChunk,
+    MemoryExtractionRequest,
+    MemoryExtractionResponse,
+    MemoryFact,
 )
 from core.emotion import classify_emotion, preload_emotion_model
 from core.retriever import retrieve
@@ -51,7 +56,7 @@ app = FastAPI(
 )
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     return {"status": "ok", "service": "ai-service", "version": "2.0.0"}
 
@@ -70,9 +75,11 @@ async def chat(request: ChatRequest):
     logger.info("[/chat] emotion=%s (%.2f)", emotion.label, emotion.score)
 
     chunks = retrieve(query=request.user_message, emotion=emotion.label, top_n=3)
-    rag_context = "\n\n".join(
-        f"[Source: {c['source_name']}]\n{c['content']}" for c in chunks
-    ) if chunks else ""
+    rag_context = (
+        "\n\n".join(f"[Source: {c['source_name']}]\n{c['content']}" for c in chunks)
+        if chunks
+        else ""
+    )
     retrieved_chunks = [
         RetrievedChunk(
             source=c.get("source", "unknown"),
@@ -112,7 +119,7 @@ async def memory_extraction(request: MemoryExtractionRequest):
         len(request.messages),
     )
 
-    messages  = [m.model_dump() for m in request.messages]
+    messages = [m.model_dump() for m in request.messages]
     raw_facts = extract_memory(messages)
 
     facts = [
