@@ -20,14 +20,28 @@ from typing import List, Tuple
 import faiss
 import numpy as np
 import requests
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"   # 384-dim, fast, good quality
 DIMENSION       = 384
 
-_index: faiss.Index         = None
-_metadata: list             = []
+_index: faiss.Index                  = None
+_metadata: list                      = []
+_model: SentenceTransformer          = None
+
+
+def _get_model() -> SentenceTransformer:
+    """
+    Load local SentenceTransformer model (once per process).
+    """
+    global _model
+    if _model is None:
+        logger.info("[embeddings] Loading local embedding model: %s", EMBEDDING_MODEL)
+        _model = SentenceTransformer(EMBEDDING_MODEL)
+    return _model
+
 
 
 def _get_index() -> Tuple[faiss.Index, list]:
@@ -77,47 +91,13 @@ def _get_index() -> Tuple[faiss.Index, list]:
 
 
 def embed(text: str) -> np.ndarray:
-    """Return a normalised 384-dim float32 embedding for `text` using Hugging Face Inference API."""
-    hf_token = os.getenv("HF_API_TOKEN", "").strip()
-    if not hf_token:
-        # Fallback to HF_API_KEY
-        hf_token = os.getenv("HF_API_KEY", "").strip()
-
-    if not hf_token:
-        raise RuntimeError("HF_API_TOKEN is not set in the environment.")
-
-    # Using the router domain for serverless inference API
-    url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2"
-    headers = {"Authorization": f"Bearer {hf_token}"}
-    payload = {
-        "inputs": [text],
-        "options": {"wait_for_model": True}
-    }
-
+    """Return a normalised 384-dim float32 embedding for `text` using local SentenceTransformer."""
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        if response.status_code != 200:
-            raise RuntimeError(f"Hugging Face API returned status {response.status_code}: {response.text}")
-
-        data = response.json()
-        if isinstance(data, list) and len(data) > 0:
-            vector = data[0]
-            # Unwrap nested sequence features if present
-            while isinstance(vector, list) and len(vector) > 0 and isinstance(vector[0], list):
-                vector = vector[0]
-
-            if len(vector) == DIMENSION:
-                embedding = np.array(vector, dtype=np.float32)
-                # Apply L2 normalisation
-                norm = np.linalg.norm(embedding)
-                if norm > 0:
-                    embedding = embedding / norm
-                return embedding
-
-        raise ValueError(f"Unexpected embedding output structure from Hugging Face: {type(data)}")
-
+        model = _get_model()
+        embedding = model.encode(text, normalize_embeddings=True)
+        return np.array(embedding, dtype=np.float32)
     except Exception as e:
-        logger.error("[embeddings] Hugging Face embed failed: %s", str(e))
+        logger.error("[embeddings] Local embed failed: %s", str(e))
         raise
 
 
@@ -145,5 +125,7 @@ def search_faiss(query_embedding: np.ndarray, k: int = 5) -> List[Tuple[dict, fl
 
 
 def preload() -> None:
-    """Eagerly warm up the FAISS index at service startup."""
+    """Eagerly warm up the FAISS index and local embedding model at service startup."""
     _get_index()
+    _get_model()
+

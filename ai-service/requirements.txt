@@ -15,6 +15,8 @@ pydantic==2.6.1
 
 # ── FAISS vector search ───────────────────────────────────────────────────────
 faiss-cpu>=1.8.0
+sentence-transformers==2.7.0
+torch==2.3.1
 
 # ── Sparse retrieval (BM25) ───────────────────────────────────────────────────
 rank-bm25==0.2.2
