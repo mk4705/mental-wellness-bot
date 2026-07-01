@@ -116,7 +116,7 @@ Node.js Backend
        ├── Emotion Detection (Hugging Face)
        ├── BM25 Knowledge Retrieval
        ├── Memory Context Retrieval
-       └── Groq LLM Response Generation
+       └── OpenAI GPT OSS 120B Response Generation (served by Groq)
 ```
 
 ---
@@ -142,7 +142,7 @@ Node.js Backend
 ## AI Service
 
 * FastAPI
-* Groq API
+* Groq API serving OpenAI GPT OSS 120B
 * Hugging Face Inference API
 * FAISS
 * BM25 Retrieval
@@ -240,7 +240,7 @@ Memory Retrieval
 Prompt Construction
       │
       ▼
-Groq LLM
+OpenAI GPT OSS 120B (served by Groq)
       │
       ▼
 Generated Response

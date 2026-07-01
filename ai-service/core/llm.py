@@ -75,7 +75,7 @@ def _get_client() -> Groq:
 
 def _get_model() -> str:
     """Read model name from env at call time — never cached at module level."""
-    return os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
+    return os.getenv("GROQ_MODEL", "openai/gpt-oss-120b").strip()
 
 
 # System prompt
