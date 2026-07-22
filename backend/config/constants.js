@@ -60,7 +60,7 @@ const SESSION_MEMORY_WINDOW = 10;
 const MEMORY_EXTRACTION_THRESHOLD = 8;
 
 // AI Service
-const AI_SERVICE_TIMEOUT_MS = 15000; // 15 seconds before giving up on AI call
+const AI_SERVICE_TIMEOUT_MS = 120000; // 2 minutes before giving up on AI call
 
 module.exports = {
   CRISIS_KEYWORDS,
