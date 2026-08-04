@@ -42,26 +42,63 @@ export const MessageBubble = ({ message, sessionId }) => {
     finally { setSubmitting(false); }
   };
 
-  // Format message content: convert numbered lists to styled blocks
+  // Render the Markdown produced by the assistant without injecting raw HTML.
   const renderContent = (text) => {
-    const lines = text.split("\n");
-    return lines.map((line, i) => {
-      if (/^\d+\.\s/.test(line)) {
-        return (
-          <div key={i} className="flex gap-2 my-0.5">
-            <span className="text-brand-400 font-semibold flex-shrink-0">
-              {line.match(/^\d+/)[0]}.
-            </span>
-            <span>{line.replace(/^\d+\.\s/, "")}</span>
-          </div>
-        );
+    const lines = (text || "").split("\n");
+    const blocks = [];
+
+    const renderInline = (value) => value.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
       }
-      if (line.startsWith("**") && line.endsWith("**")) {
-        return <p key={i} className="font-semibold my-1">{line.slice(2, -2)}</p>;
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return <em key={index}>{part.slice(1, -1)}</em>;
       }
-      if (line.trim() === "") return <br key={i} />;
-      return <p key={i} className="leading-relaxed">{line}</p>;
+      return part;
     });
+
+    for (let i = 0; i < lines.length;) {
+      const line = lines[i];
+      const heading = line.match(/^#{1,6}\s+(.+)$/);
+      const ordered = line.match(/^\d+\.\s+(.+)$/);
+      const bullet = line.match(/^[-*]\s+(.+)$/);
+
+      if (heading) {
+        blocks.push(<p key={`heading-${i}`} className="font-semibold text-base mt-2 first:mt-0">{renderInline(heading[1])}</p>);
+        i += 1;
+      } else if (ordered || bullet) {
+        const isOrdered = Boolean(ordered);
+        const items = [];
+        const listPattern = isOrdered ? /^\d+\.\s+(.+)$/ : /^[-*]\s+(.+)$/;
+
+        while (i < lines.length) {
+          const item = lines[i].match(listPattern);
+          if (item) {
+            items.push(item[1]);
+            i += 1;
+          } else if (lines[i].trim() === "" && lines[i + 1]?.match(listPattern)) {
+            i += 1;
+          } else {
+            break;
+          }
+        }
+
+        const List = isOrdered ? "ol" : "ul";
+        blocks.push(
+          <List key={`list-${i}`} className={`${isOrdered ? "list-decimal" : "list-disc"} my-1.5 space-y-1 pl-5 marker:text-brand-500`}>
+            {items.map((item, index) => <li key={index}>{renderInline(item)}</li>)}
+          </List>
+        );
+      } else if (line.trim() === "") {
+        blocks.push(<div key={`space-${i}`} className="h-2" aria-hidden="true" />);
+        i += 1;
+      } else {
+        blocks.push(<p key={`paragraph-${i}`} className="leading-relaxed">{renderInline(line)}</p>);
+        i += 1;
+      }
+    }
+
+    return blocks;
   };
 
   return (
@@ -84,7 +121,7 @@ export const MessageBubble = ({ message, sessionId }) => {
               : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-sm"
             }`}
         >
-          <div className="space-y-0.5 [overflow-wrap:anywhere]">{renderContent(message.content)}</div>
+          <div className="[overflow-wrap:anywhere]">{renderContent(message.content)}</div>
         </div>
 
         {/* Metadata row */}
