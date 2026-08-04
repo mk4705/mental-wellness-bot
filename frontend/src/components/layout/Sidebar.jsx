@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Plus, Trash2, BarChart2,
-  Brain, LogOut, ChevronLeft, ChevronRight, X, Sun, Moon
+  Brain, HeartHandshake, LogOut, ChevronLeft, ChevronRight, X, Sun, Moon
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -60,7 +60,7 @@ export const Sidebar = ({ sessions, onNewSession, onSessionDeleted, mobileOpen =
         {!displayCollapsed && (
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
-              <Brain size={14} className="text-white" />
+              <HeartHandshake size={15} className="text-white" aria-hidden="true" />
             </div>
             <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Wellness Bot</span>
           </div>
