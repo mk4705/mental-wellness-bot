@@ -1,33 +1,29 @@
-# ai-service/requirements.txt
+# AI service dependencies for Render's CPU-only free instances.
 #
-# Changes from original:
-#   - groq upgraded: 0.4.2 → 0.9.0  (0.4.2 had auth header bugs)
-#   - transformers added            (local emotion classification)
-#   - torch added (CPU-only)        (required by transformers pipeline)
-#   - sentence-transformers bumped  (2.5.1 → 2.7.0, numpy 2.x compatible)
-#   - numpy constraint updated      (faiss-cpu 1.8+ supports numpy 2.x)
-#   - requests kept                 (used for other potential HTTP calls)
+# PyTorch's CPU wheels are not published on PyPI.  Keep this directive and the
+# +cpu local version together: otherwise pip resolves torch==2.3.1 from PyPI,
+# whose Linux wheel pulls the NVIDIA CUDA runtime packages.
+--extra-index-url https://download.pytorch.org/whl/cpu
 
-# ── Web framework ─────────────────────────────────────────────────────────────
+# Web framework
 fastapi==0.109.2
 uvicorn[standard]==0.27.1
 pydantic==2.6.1
 
-# ── FAISS vector search ───────────────────────────────────────────────────────
-faiss-cpu>=1.8.0
+# Retrieval and local embeddings
+# sentence-transformers 2.7.0 requires transformers >=4.34,<5 and torch >=1.11.
+# transformers 4.41.2 is compatible with both it and torch 2.3.1.
+faiss-cpu==1.8.0.post1
 sentence-transformers==2.7.0
-torch==2.3.1
+transformers==4.41.2
+torch==2.3.1+cpu
+numpy==1.26.4
 
-# ── Sparse retrieval (BM25) ───────────────────────────────────────────────────
+# Sparse retrieval
 rank-bm25==0.2.2
 
-# ── LLM (Groq) ───────────────────────────────────────────────────────────────
-# 0.4.2 had a bug where the Authorization header was silently malformed
-# in some ASGI contexts. 0.9.0 fixes this.
-groq>=0.9.0
-
-# ── Utilities ─────────────────────────────────────────────────────────────────
-requests>=2.31.0
+# LLM and utilities
+groq==0.9.0
+requests==2.31.0
 nltk==3.8.1
-numpy>=1.24.0
 python-dotenv==1.0.1

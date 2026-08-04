@@ -68,7 +68,7 @@ def sentence_chunk(text: str, sentences_per_chunk: int = 4, overlap: int = 1):
 
 
 def main():
-    print("Using Hugging Face Inference API for embeddings")
+    print(f"Using local SentenceTransformer embeddings ({EMBEDDING_MODEL})")
 
     # Read knowledge files
     print(f"\nReading knowledge files from: {KNOWLEDGE_DIR}/")
@@ -110,7 +110,7 @@ def main():
     print(f"\n   Total chunks: {len(all_chunks)}")
 
     # Generate embeddings
-    print("\nGenerating embeddings via Hugging Face Inference API...")
+    print("\nGenerating embeddings locally...")
     embeddings_list = []
     for i, chunk in enumerate(all_chunks):
         print(f"   Embedding chunk {i+1}/{len(all_chunks)}...", end="\r")
