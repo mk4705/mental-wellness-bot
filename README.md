@@ -4,7 +4,7 @@ An AI-powered mental wellness companion that provides emotionally aware conversa
 
 ## Live Demo
 
-Frontend: https://mwc-nrvo.onrender.com
+Frontend: [https://mwc-nrvo.onrender.com](https://mental-wellness-bot-vzvy.onrender.com)
 
 ---
 
