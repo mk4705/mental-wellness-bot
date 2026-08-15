@@ -1,10 +1,12 @@
 # ai-service/core/embeddings.py
 #
-# FAISS index loading and local sentence-transformer embeddings.
+# FAISS index loading and Hugging Face embedding inference.
 #
 # Design decisions:
-# - Model and index are loaded lazily on first call, then cached as module-level
-#   singletons — one load per process lifetime.
+# - The FAISS index is loaded lazily on first call, then cached as a module-level
+#   singleton — one load per process lifetime.
+# - Query embeddings are generated remotely by Hugging Face so Render never
+#   imports or loads PyTorch/SentenceTransformer.
 # - INDEX_PATH and METADATA_PATH are read inside _get_index(), NOT at module
 #   level, so load_dotenv() in main.py always runs first.
 # - If the index file is missing, we log a clear error and return an empty
@@ -15,32 +17,26 @@ import os
 import json
 import logging
 import traceback
+from functools import lru_cache
 from typing import List, Tuple
 
 import faiss
 import numpy as np
 import requests
-from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"   # 384-dim, fast, good quality
-DIMENSION       = 384
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+DIMENSION = 384
+HF_EMBEDDING_URL = (
+    "https://router.huggingface.co/hf-inference/models/"
+    f"{EMBEDDING_MODEL}/pipeline/feature-extraction"
+)
+HF_TIMEOUT_SECONDS = 20
+HF_MAX_ATTEMPTS = 2
 
-_index: faiss.Index                  = None
-_metadata: list                      = []
-_model: SentenceTransformer          = None
-
-
-def _get_model() -> SentenceTransformer:
-    """
-    Load local SentenceTransformer model (once per process).
-    """
-    global _model
-    if _model is None:
-        logger.info("[embeddings] Loading local embedding model: %s", EMBEDDING_MODEL)
-        _model = SentenceTransformer(EMBEDDING_MODEL)
-    return _model
+_index: faiss.Index = None
+_metadata: list = []
 
 
 
@@ -90,14 +86,102 @@ def _get_index() -> Tuple[faiss.Index, list]:
     return _index, _metadata
 
 
-def embed(text: str) -> np.ndarray:
-    """Return a normalised 384-dim float32 embedding for `text` using local SentenceTransformer."""
+def _get_hf_token() -> str:
+    """Return the existing Hugging Face token configuration, if present."""
+    return (
+        os.getenv("HF_API_TOKEN", "").strip()
+        or os.getenv("HF_API_KEY", "").strip()
+    )
+
+
+def _parse_embedding(payload: object) -> np.ndarray:
+    """Validate Hugging Face feature-extraction output and return one vector."""
+    vector = payload
+    if (
+        isinstance(payload, list)
+        and len(payload) == 1
+        and isinstance(payload[0], list)
+    ):
+        vector = payload[0]
+
+    if not isinstance(vector, list) or len(vector) != DIMENSION:
+        raise ValueError(
+            "Hugging Face returned an embedding with an unexpected shape; "
+            f"expected one {DIMENSION}-dimensional vector."
+        )
+
     try:
-        model = _get_model()
-        embedding = model.encode(text, normalize_embeddings=True)
-        return np.array(embedding, dtype=np.float32)
-    except Exception as e:
-        logger.error("[embeddings] Local embed failed: %s", str(e))
+        embedding = np.asarray(vector, dtype=np.float32)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Hugging Face returned a non-numeric embedding.") from exc
+
+    if embedding.shape != (DIMENSION,) or not np.isfinite(embedding).all():
+        raise ValueError(
+            "Hugging Face returned an invalid "
+            f"{DIMENSION}-dimensional embedding."
+        )
+
+    # The committed IndexFlatL2 vectors were built with
+    # SentenceTransformer.encode(..., normalize_embeddings=True). Preserve that
+    # exact unit-vector retrieval behavior for remote query embeddings.
+    norm = float(np.linalg.norm(embedding))
+    if norm == 0.0:
+        raise ValueError("Hugging Face returned a zero-length embedding.")
+    return embedding / norm
+
+
+@lru_cache(maxsize=256)
+def _embed_cached(text: str) -> np.ndarray:
+    """Request and validate one embedding, retrying only transient HF failures."""
+    token = _get_hf_token()
+    if not token:
+        raise RuntimeError("HF_API_TOKEN is not set in the environment.")
+
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {"inputs": [text], "normalize": True}
+    last_error: Exception | None = None
+
+    for attempt in range(1, HF_MAX_ATTEMPTS + 1):
+        try:
+            response = requests.post(
+                HF_EMBEDDING_URL,
+                headers=headers,
+                json=payload,
+                timeout=HF_TIMEOUT_SECONDS,
+            )
+            if response.status_code == 200:
+                return _parse_embedding(response.json())
+
+            message = (
+                f"Hugging Face embedding API returned HTTP {response.status_code}: "
+                f"{response.text[:300]}"
+            )
+            if response.status_code < 500 and response.status_code != 429:
+                raise RuntimeError(message)
+            last_error = RuntimeError(message)
+        except (requests.RequestException, ValueError) as exc:
+            last_error = exc
+
+        if attempt < HF_MAX_ATTEMPTS:
+            logger.warning(
+                "[embeddings] Hugging Face embedding attempt %d/%d failed: %s",
+                attempt,
+                HF_MAX_ATTEMPTS,
+                last_error,
+            )
+
+    raise RuntimeError("Hugging Face embedding request failed.") from last_error
+
+
+def embed(text: str) -> np.ndarray:
+    """Return a cached, unit-normalized 384-dim float32 Hugging Face embedding."""
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Cannot embed an empty query.")
+    try:
+        # Copy so callers cannot mutate the cached vector used by future requests.
+        return _embed_cached(text.strip()).copy()
+    except Exception as exc:
+        logger.error("[embeddings] Remote embed failed: %s", exc)
         raise
 
 
@@ -108,6 +192,12 @@ def search_faiss(query_embedding: np.ndarray, k: int = 5) -> List[Tuple[dict, fl
     Returns [] if the index is empty.
     """
     index, metadata = _get_index()
+
+    if query_embedding.shape != (DIMENSION,):
+        raise ValueError(
+            f"Expected a {DIMENSION}-dimensional query embedding, "
+            f"received shape {query_embedding.shape}."
+        )
 
     if index.ntotal == 0:
         logger.warning("[embeddings] FAISS index is empty — no results returned")
@@ -125,7 +215,6 @@ def search_faiss(query_embedding: np.ndarray, k: int = 5) -> List[Tuple[dict, fl
 
 
 def preload() -> None:
-    """Eagerly warm up the FAISS index and local embedding model at service startup."""
+    """Eagerly load the lightweight FAISS index; embeddings remain remote."""
     _get_index()
-    _get_model()
 

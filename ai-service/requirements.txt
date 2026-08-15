@@ -1,22 +1,10 @@
-# AI service dependencies for Render's CPU-only free instances.
-#
-# PyTorch's CPU wheels are not published on PyPI.  Keep this directive and the
-# +cpu local version together: otherwise pip resolves torch==2.3.1 from PyPI,
-# whose Linux wheel pulls the NVIDIA CUDA runtime packages.
---extra-index-url https://download.pytorch.org/whl/cpu
-
 # Web framework
 fastapi==0.109.2
 uvicorn[standard]==0.27.1
 pydantic==2.6.1
 
-# Retrieval and local embeddings
-# sentence-transformers 2.7.0 requires transformers >=4.34,<5 and torch >=1.11.
-# transformers 4.41.2 is compatible with both it and torch 2.3.1.
+# Retrieval and remote embeddings
 faiss-cpu==1.8.0.post1
-sentence-transformers==2.7.0
-transformers==4.41.2
-torch==2.3.1+cpu
 numpy==1.26.4
 
 # Sparse retrieval

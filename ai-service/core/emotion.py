@@ -1,10 +1,6 @@
 # ai-service/core/emotion.py
 #
-# Emotion classification — LOCAL inference using transformers pipeline.
-#
-# Model execution: local inference using the transformers library is used instead
-# of a remote HuggingFace Inference API to eliminate external network dependencies,
-# DNS resolution issues, and network latency.
+# Emotion classification through Hugging Face Inference API.
 #
 # Model: j-hartmann/emotion-english-distilroberta-base
 #   - 7 emotion labels: joy, sadness, anger, fear, surprise, disgust, neutral

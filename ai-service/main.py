@@ -22,7 +22,7 @@ from schemas import (
     MemoryExtractionResponse,
     MemoryFact,
 )
-from core.emotion import classify_emotion, preload_emotion_model
+from core.emotion import classify_emotion
 from core.retriever import retrieve
 from core.llm import generate_response, extract_memory
 from core.embeddings import preload
@@ -37,13 +37,12 @@ logger = logging.getLogger(__name__)
 # Startup and shutdown lifecycle
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("AI service starting - preloading models...")
+    logger.info("AI service starting - loading FAISS index...")
     try:
         preload()
-        preload_emotion_model()
-        logger.info("All models loaded. AI service ready.")
+        logger.info("FAISS index loaded. AI service ready.")
     except Exception:
-        logger.error("Model preload failed:\n%s", traceback.format_exc())
+        logger.error("FAISS index preload failed:\n%s", traceback.format_exc())
     yield
     logger.info("AI service shutting down.")
 
