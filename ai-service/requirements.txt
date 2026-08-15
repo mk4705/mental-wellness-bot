@@ -11,7 +11,11 @@ numpy==1.26.4
 rank-bm25==0.2.2
 
 # LLM and utilities
-groq==0.9.0
+# Groq 1.6.0 supports HTTPX 0.28's `proxy` API. Keep the complete HTTP
+# transport stack pinned so Render resolves the same tested combination.
+groq==1.6.0
+httpx==0.28.1
+httpcore==1.0.9
 requests==2.31.0
 nltk==3.8.1
 python-dotenv==1.0.1
